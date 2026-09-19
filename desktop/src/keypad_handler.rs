@@ -9,7 +9,10 @@ pub enum State {
 pub fn input_handler(event_pump: &mut sdl2::EventPump, state: &mut State) {
     for event in event_pump.poll_iter() {
         match event {
-            Event::Quit { .. } => *state = State::QUIT,
+            Event::Quit { .. } => {
+                *state = State::QUIT;
+                break;
+            }
             Event::KeyDown {
                 keycode: Some(keycode),
                 ..
