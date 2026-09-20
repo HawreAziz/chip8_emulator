@@ -1,6 +1,6 @@
 use crate::keypad_handler;
 use chip8_core;
-use sdl2::{event::Event, render::Canvas, video::Window};
+use sdl2::{event::Event, pixels::Color, rect::Rect, render::Canvas, video::Window};
 
 pub struct Sdl {
     canvas: Canvas<Window>,
@@ -41,14 +41,6 @@ impl Sdl {
 
     pub fn run(&mut self) {
         loop {
-            // for evt in self.event_pump.poll_iter() {
-            //     match evt {
-            //         Event::Quit { .. } => {
-            //             break 'gameloop;
-            //         }
-            //         _ => (),
-            //     }
-            // }
             keypad_handler::input_handler(&mut self.event_pump, &mut self.state);
             match self.state {
                 keypad_handler::State::PAUSED => continue,
@@ -60,10 +52,37 @@ impl Sdl {
             // }
             // cpu.tick_timers();
             // draw_screen(&cpu, &mut canvas);
-            println!("drawing");
             self.draw_screen();
         }
     }
 
-    fn draw_screen(&mut self) {}
+    fn draw_screen(&mut self) {
+        // TODO screen should be updated with the backgroun and foreground colors comming from chip8
+        // for now keep this
+        let background: u32 = 0x000000FF;
+        let foreground: u32 = 0xFFFFFFFF;
+
+        let bg_r: u8 = ((background >> 24) & 0xFF) as u8;
+        let bg_g: u8 = ((background >> 16) & 0xFF) as u8;
+        let bg_b: u8 = ((background >> 8) & 0xFF) as u8;
+        let bg_a: u8 = (background & 0xFF) as u8;
+
+        let fg_r: u8 = ((foreground >> 24) & 0xFF) as u8;
+        let fg_g: u8 = ((foreground >> 16) & 0xFF) as u8;
+        let fg_b: u8 = ((foreground >> 8) & 0xFF) as u8;
+        let fg_a: u8 = (foreground & 0xFF) as u8;
+
+        // clear screen
+        self.canvas
+            .set_draw_color(Color::RGBA(bg_r, bg_g, bg_b, bg_a));
+        self.canvas.clear();
+
+        self.canvas
+            .set_draw_color(Color::RGBA(fg_r, fg_g, fg_b, fg_a));
+
+        let rect = Rect::new(50, 50, 50, 50);
+
+        self.canvas.fill_rect(rect).unwrap();
+        self.canvas.present();
+    }
 }
