@@ -40,6 +40,8 @@ impl Sdl {
     }
 
     pub fn draw_screen(&mut self, chip8: &chip8_core::Chip8, config: &chip8_core::Config) {
+        self.canvas.set_draw_color(Color::RGBA(0, 0, 0, 0));
+        self.canvas.clear();
         let fg_r: u8 = ((config.fg_color >> 24) & 0xFF) as u8;
         let fg_g: u8 = ((config.fg_color >> 16) & 0xFF) as u8;
         let fg_b: u8 = ((config.fg_color >> 8) & 0xFF) as u8;
@@ -50,7 +52,7 @@ impl Sdl {
         for (i, pixel) in chip8.get_display().iter().enumerate() {
             if *pixel {
                 let x = (i % config.screen_width) as u32;
-                let y = (i % config.screen_height) as u32;
+                let y = (i / config.screen_width) as u32;
 
                 let rect = Rect::new(
                     (x * config.scale) as i32,

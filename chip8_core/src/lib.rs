@@ -1,3 +1,4 @@
+use core::num;
 use std::{fs::File, io::Read};
 
 use log::debug;
@@ -124,6 +125,8 @@ impl Chip8 {
         self.inst.x = ((opcode >> 8) & 0xF) as u8;
         self.inst.y = ((opcode >> 4) & 0xF) as u8;
         self.inst.n = (opcode & 0xF) as u8;
+        self.inst.nn = (opcode & 0x00FF) as u8;
+        self.inst.nnn = (opcode & 0x0FFF) as u16;
 
         let info = format!("Address 0x{:04x}, Opcode 0x{:04x} Desc: ", self.pc, opcode);
         match (c, self.inst.x, self.inst.y, self.inst.n) {
@@ -168,29 +171,21 @@ impl Chip8 {
                 // extract x and cordinates
                 let x_coords = self.v_reg[self.inst.x as usize] as usize % SCREEN_WIDTH;
                 let y_coords = self.v_reg[self.inst.y as usize] as usize % SCREEN_HEIGHT;
+                let num_rows: usize = self.inst.n as usize;
 
                 self.v_reg[0xF] = 0;
-                for row in 0..self.inst.n {
-                    let i_index = self.i + row as u16;
-                    let row_pixel = self.ram[i_index as usize];
-                    let current_y = y_coords + row as usize;
-
-                    if current_y >= SCREEN_HEIGHT {
-                        break;
-                    }
-                    for col_index in 0..8 {
-                        let current_x = x_coords + col_index;
-
-                        if current_x >= SCREEN_WIDTH {
-                            break;
+                for row in 0..num_rows {
+                    let sprite_byte = self.ram[self.i as usize + row];
+                    for col in 0..8 {
+                        if (sprite_byte & (0b10000000 >> col)) != 0 {
+                            let pixel_x = (x_coords + col) % SCREEN_WIDTH;
+                            let pixel_y = (y_coords + row) % SCREEN_HEIGHT;
+                            let index = pixel_x + SCREEN_WIDTH * pixel_y;
+                            if self.display[index] {
+                                self.v_reg[0xF] = 1
+                            }
+                            self.display[index] ^= true;
                         }
-
-                        let flipped = (row_pixel & (0x80 >> col_index)) > 0;
-                        let screen_index = current_y * SCREEN_WIDTH + current_x;
-                        if flipped && self.display[screen_index] {
-                            self.v_reg[0xF] = 1;
-                        }
-                        self.display[screen_index] = flipped ^ self.display[screen_index];
                     }
                 }
 
