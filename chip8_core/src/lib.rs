@@ -428,13 +428,47 @@ impl Chip8 {
                 self.i = self.v_reg[self.inst.x as usize] as u16 * 5;
             }
             (0xF, _, 0x3, 0x3) => {
-                debug!("{info}");
+                let vx = self.v_reg[self.inst.x as usize];
+                debug!(
+                    "{info} I0x{:x} (0x{:x}) = hundreds of V0x{:x} (0x{:x}) = {:}\
+                I0x{:x} (0x{:x}) = hundreds of V0x{:x} (0x{:x}) = {:}\
+                I0x{:x} (0x{:x}) = hundreds of V0x{:x} (0x{:x}) = {:}",
+                    self.i,
+                    self.ram[self.i as usize],
+                    self.inst.x,
+                    vx,
+                    (vx / 100),
+                    self.i + 1,
+                    self.ram[self.i as usize + 1],
+                    self.inst.x,
+                    vx,
+                    ((vx / 10) % 10),
+                    self.i + 2,
+                    self.ram[self.i as usize + 1],
+                    self.inst.x,
+                    vx,
+                    (vx % 10)
+                );
+                // 123
+                self.ram[self.i as usize] = vx / 100;
+                self.ram[self.i as usize + 1] = (vx / 10) % 10;
+                self.ram[self.i as usize + 2] = vx % 10;
             }
             (0xF, _, 0x5, 0x5) => {
-                debug!("{info}");
+                debug!(
+                    "{info} Store V0 - VX in momery starting from I, I incread by one and I not modified"
+                );
+                for i in 0..=self.inst.x {
+                    self.ram[self.i as usize + i as usize] = self.v_reg[i as usize];
+                }
             }
             (0xF, _, 0x6, 0x5) => {
-                debug!("{info}");
+                debug!(
+                    "{info} Fill V0 - VX with values from memory stating at I, I incread by 1, I not modified"
+                );
+                for i in 0..=self.inst.x {
+                    self.v_reg[i as usize] = self.ram[self.i as usize + i as usize];
+                }
             }
             _ => debug!("Unimplemented opcode 0x{:04x}", opcode),
         }
