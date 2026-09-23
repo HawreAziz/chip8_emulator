@@ -29,7 +29,11 @@ fn map_key(keycode: Keycode) -> Option<usize> {
     }
 }
 
-pub fn input_handler(event_pump: &mut sdl2::EventPump, state: &mut State) {
+pub fn input_handler(
+    event_pump: &mut sdl2::EventPump,
+    state: &mut State,
+    chip8: &mut chip8_core::Chip8,
+) {
     for event in event_pump.poll_iter() {
         match event {
             Event::Quit { .. } => {
@@ -53,6 +57,7 @@ pub fn input_handler(event_pump: &mut sdl2::EventPump, state: &mut State) {
                 }
                 if let Some(index) = map_key(keycode) {
                     println!("Pressed key: {:02x}", index);
+                    chip8.set_key(index, true);
                 }
             }
             Event::KeyUp {
@@ -61,6 +66,7 @@ pub fn input_handler(event_pump: &mut sdl2::EventPump, state: &mut State) {
             } => {
                 if let Some(index) = map_key(keycode) {
                     println!("Key {:02x} released", index);
+                    chip8.set_key(index, false);
                 }
             }
 

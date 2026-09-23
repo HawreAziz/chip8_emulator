@@ -1,5 +1,6 @@
-use core::{num, panic};
-use std::{fs::File, io::Read};
+use core::panic;
+use rand;
+use std::{fs::File, io::Read, process::exit};
 
 use log::debug;
 
@@ -91,6 +92,19 @@ impl Chip8 {
         chip8.ram[..FONTSET_SIZE].copy_from_slice(&FONTSET);
         chip8.load_chip(chip8_file);
         chip8
+    }
+
+    pub fn tick_delay(&mut self) {
+        if self.delay_timer > 0 {
+            self.delay_timer -= 1;
+        }
+        if self.sound_timer > 0 {
+            self.sound_timer -= 1;
+        }
+    }
+
+    pub fn set_key(&mut self, index: usize, value: bool) {
+        self.keypad[index] = value
     }
 
     fn load_chip(&mut self, chip8_file: &str) {
@@ -346,6 +360,14 @@ impl Chip8 {
                 );
                 self.i = self.inst.nnn;
             }
+            (0xC, _, _, _) => {
+                debug!(
+                    "{info} V0x{:x} = rand() & NN (0x{:x})",
+                    self.inst.x, self.inst.nn
+                );
+                let random = rand::random::<u8>();
+                self.v_reg[self.inst.x as usize] = random & self.inst.nn;
+            }
             (0xD, _, _, _) => {
                 debug!("{info} Render sprite at x and y");
                 // extract x and cordinates
@@ -366,6 +388,25 @@ impl Chip8 {
                             self.display[index] ^= true;
                         }
                     }
+                }
+            }
+            (0xE, _, 0x9, 0xE) => {
+                debug!(
+                    "{info} Skip next instruction if key[VX] == true, {}",
+                    self.keypad[self.v_reg[self.inst.x as usize] as usize]
+                );
+                if self.keypad[self.v_reg[self.inst.x as usize] as usize] {
+                    self.pc += 2;
+                }
+            }
+
+            (0xE, _, 0xA, 0x1) => {
+                debug!(
+                    "{info} Skip next instruction if key[VX] == false, {}",
+                    self.keypad[self.v_reg[self.inst.x as usize] as usize]
+                );
+                if !self.keypad[self.v_reg[self.inst.x as usize] as usize] {
+                    self.pc += 2;
                 }
             }
             (0xF, _, 0x0, 0x7) => {
@@ -470,7 +511,10 @@ impl Chip8 {
                     self.v_reg[i as usize] = self.ram[self.i as usize + i as usize];
                 }
             }
-            _ => debug!("Unimplemented opcode 0x{:04x}", opcode),
+            _ => {
+                debug!("Unimplemented opcode 0x{:04x}", opcode);
+                exit(1);
+            }
         }
     }
 }

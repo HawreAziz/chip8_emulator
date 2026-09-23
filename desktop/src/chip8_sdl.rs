@@ -1,18 +1,20 @@
 use crate::keypad_handler;
 use chip8_core;
-use sdl2::{pixels::Color, rect::Rect, render::Canvas, video::Window};
+use sdl2::{TimerSubsystem, pixels::Color, rect::Rect, render::Canvas, video::Window};
 
 pub struct Sdl {
     canvas: Canvas<Window>,
     pub event_pump: sdl2::EventPump, // Sparas här så att de inte försvinner ur minnet
     _sdl_context: sdl2::Sdl,         // Håller SDL vid liv under hela structens li
     pub state: keypad_handler::State,
+    pub sdl_timer: TimerSubsystem,
 }
 
 impl Sdl {
     pub fn new() -> Sdl {
         let sdl_context = sdl2::init().unwrap();
         let video_sybsystem = sdl_context.video().unwrap();
+        let sdl_timer = sdl_context.timer().unwrap();
         let window = video_sybsystem
             .window(
                 "Chip8-emulator",
@@ -32,7 +34,12 @@ impl Sdl {
             event_pump: event_pump,
             _sdl_context: sdl_context,
             state: keypad_handler::State::RUNNING,
+            sdl_timer,
         }
+    }
+
+    pub fn update_timer(&self, chip8: &mut chip8_core::Chip8) {
+        chip8.tick_delay();
     }
 
     pub fn cleanup(self) {
