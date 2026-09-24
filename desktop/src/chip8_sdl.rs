@@ -1,5 +1,8 @@
+use crate::chip8_audio;
+use crate::chip8_audio::SquareWave;
 use crate::keypad_handler;
 use chip8_core;
+use sdl2::audio::{AudioDevice, AudioSpecDesired};
 use sdl2::{TimerSubsystem, pixels::Color, rect::Rect, render::Canvas, video::Window};
 
 pub struct Sdl {
@@ -8,6 +11,7 @@ pub struct Sdl {
     _sdl_context: sdl2::Sdl,         // Håller SDL vid liv under hela structens li
     pub state: keypad_handler::State,
     pub sdl_timer: TimerSubsystem,
+    audio_device: AudioDevice<SquareWave>,
 }
 
 impl Sdl {
@@ -29,17 +33,37 @@ impl Sdl {
         canvas.clear();
         canvas.present();
         let event_pump = sdl_context.event_pump().unwrap();
+
+        let audio_subsystem = sdl_context.audio().unwrap();
+        let desired_spec = AudioSpecDesired {
+            freq: Some(44100),
+            channels: Some(1),
+            samples: None,
+        };
+        let audio_device = audio_subsystem
+            .open_playback(None, &desired_spec, |spec| {
+                let target_freq = 440.0;
+                SquareWave::new(target_freq / spec.freq as f32, 0.0, 0.1)
+            })
+            .unwrap();
+
         Sdl {
             canvas: canvas,
             event_pump: event_pump,
             _sdl_context: sdl_context,
             state: keypad_handler::State::RUNNING,
             sdl_timer,
+            audio_device,
         }
     }
 
     pub fn update_timer(&self, chip8: &mut chip8_core::Chip8) {
         chip8.tick_delay();
+        if chip8.get_sound_timer() > 0 {
+            self.audio_device.resume();
+        } else {
+            self.audio_device.pause();
+        }
     }
 
     pub fn cleanup(self) {

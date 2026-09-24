@@ -103,6 +103,10 @@ impl Chip8 {
         }
     }
 
+    pub fn get_sound_timer(&self) -> u8 {
+        self.sound_timer
+    }
+
     pub fn set_key(&mut self, index: usize, value: bool) {
         self.keypad[index] = value
     }

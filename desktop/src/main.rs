@@ -1,4 +1,5 @@
 use chip8_core;
+mod chip8_audio;
 mod chip8_sdl;
 mod keypad_handler;
 use sdl2::log::log_error;
