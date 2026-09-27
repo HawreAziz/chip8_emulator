@@ -3,7 +3,7 @@ use sdl2::audio::AudioCallback;
 pub struct SquareWave {
     phase_inc: f32,
     phase: f32,
-    volume: f32,
+    pub volume: f32,
 }
 
 impl SquareWave {

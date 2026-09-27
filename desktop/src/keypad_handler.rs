@@ -1,4 +1,6 @@
-use sdl2::{event::Event, keyboard::Keycode};
+use sdl2::{event::Event, keyboard::Keycode, sys::KeyCode};
+
+use crate::chip8_sdl::Sdl;
 
 #[derive(PartialEq)]
 pub enum State {
@@ -29,15 +31,11 @@ fn map_key(keycode: Keycode) -> Option<usize> {
     }
 }
 
-pub fn input_handler(
-    event_pump: &mut sdl2::EventPump,
-    state: &mut State,
-    chip8: &mut chip8_core::Chip8,
-) {
-    for event in event_pump.poll_iter() {
+pub fn input_handler(sdl: &mut Sdl, chip8: &mut chip8_core::Chip8) {
+    for event in sdl.event_pump.poll_iter() {
         match event {
             Event::Quit { .. } => {
-                *state = State::QUIT;
+                sdl.state = State::QUIT;
                 break;
             }
             Event::KeyDown {
@@ -45,11 +43,11 @@ pub fn input_handler(
                 ..
             } => {
                 if keycode == Keycode::Escape {
-                    *state = State::QUIT;
+                    sdl.state = State::QUIT;
                     break;
                 }
                 if keycode == Keycode::Space {
-                    *state = if *state == State::PAUSED {
+                    sdl.state = if sdl.state == State::PAUSED {
                         State::RUNNING
                     } else {
                         State::PAUSED
@@ -58,6 +56,31 @@ pub fn input_handler(
                 if let Some(index) = map_key(keycode) {
                     println!("Pressed key: {:02x}", index);
                     chip8.set_key(index, true);
+                }
+
+                if keycode == Keycode::J {
+                    let mut wave = sdl.audio_device.lock();
+                    if wave.volume > 0.0 {
+                        wave.volume -= 0.01;
+                    }
+                }
+                if keycode == Keycode::P {
+                    let mut wave = sdl.audio_device.lock();
+                    if wave.volume < 1.0 {
+                        wave.volume += 0.01;
+                    }
+                }
+
+                if keycode == Keycode::UP {
+                    if sdl.config.color_lerp_rate < 1.0 {
+                        sdl.config.color_lerp_rate += 0.1;
+                    }
+                }
+
+                if keycode == Keycode::DOWN {
+                    if sdl.config.color_lerp_rate > 0.2 {
+                        sdl.config.color_lerp_rate -= 0.1;
+                    }
                 }
             }
             Event::KeyUp {

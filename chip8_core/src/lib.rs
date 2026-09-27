@@ -4,12 +4,8 @@ use std::{fs::File, io::Read, process::exit};
 
 use log::debug;
 
-const SCREEN_WIDTH: usize = 64;
-const SCREEN_HEIGHT: usize = 32;
-
-const SCALE: u32 = 15;
-pub const WINDOW_WIDTH: u32 = SCREEN_WIDTH as u32 * SCALE;
-pub const WINDOW_HEIGHT: u32 = SCREEN_HEIGHT as u32 * SCALE;
+pub const SCREEN_WIDTH: usize = 64;
+pub const SCREEN_HEIGHT: usize = 32;
 
 const RAM_SIZE: usize = 4096;
 const STACK_SIZE: usize = 16;
@@ -70,11 +66,13 @@ pub struct Chip8 {
     sound_timer: u8,
     v_reg: [u8; REG_SIZE],
     keypad: [bool; NUM_KEYS],
+    draw: bool,
     inst: Inst,
+    rom_file: String,
 }
 
 impl Chip8 {
-    pub fn new(chip8_file: &str) -> Chip8 {
+    pub fn new(chip8_file: String) -> Chip8 {
         env_logger::init();
         let mut chip8 = Chip8 {
             ram: [0; RAM_SIZE],
@@ -88,10 +86,20 @@ impl Chip8 {
             v_reg: [0; REG_SIZE],
             keypad: [false; NUM_KEYS],
             inst: Inst::new(),
+            draw: false,
+            rom_file: chip8_file,
         };
         chip8.ram[..FONTSET_SIZE].copy_from_slice(&FONTSET);
-        chip8.load_chip(chip8_file);
+        chip8.load_chip();
         chip8
+    }
+
+    pub fn get_draw(&self) -> bool {
+        self.draw
+    }
+
+    pub fn set_draw(&mut self, draw: bool) {
+        self.draw = draw;
     }
 
     pub fn tick_delay(&mut self) {
@@ -111,8 +119,8 @@ impl Chip8 {
         self.keypad[index] = value
     }
 
-    fn load_chip(&mut self, chip8_file: &str) {
-        let mut file = File::open(chip8_file).expect("Failed to open file {chip8_file}");
+    fn load_chip(&mut self) {
+        let mut file = File::open(&self.rom_file).expect("Failed to open file {chip8_file}");
         let mut buffer = Vec::new();
 
         file.read_to_end(&mut buffer)
@@ -151,6 +159,7 @@ impl Chip8 {
             (0, 0, 0xE, 0) => {
                 debug!("{info} clear the display set all pixels off to 0");
                 self.display = [false; SCREEN_WIDTH * SCREEN_HEIGHT];
+                self.set_draw(true);
             }
             (0x1, _, _, _) => {
                 debug!(
@@ -393,6 +402,7 @@ impl Chip8 {
                         }
                     }
                 }
+                self.set_draw(true);
             }
             (0xE, _, 0x9, 0xE) => {
                 debug!(
@@ -519,30 +529,6 @@ impl Chip8 {
                 debug!("Unimplemented opcode 0x{:04x}", opcode);
                 exit(1);
             }
-        }
-    }
-}
-
-pub struct Config {
-    pub bg_color: u32,
-    pub fg_color: u32,
-    pub screen_width: usize,
-    pub screen_height: usize,
-    pub window_height: u32,
-    pub window_width: u32,
-    pub scale: u32,
-}
-
-impl Config {
-    pub fn new() -> Config {
-        Config {
-            bg_color: 0x000000FF,
-            fg_color: 0xFFFFFFFF,
-            screen_width: SCREEN_WIDTH,
-            screen_height: SCREEN_HEIGHT,
-            window_width: WINDOW_WIDTH,
-            window_height: WINDOW_HEIGHT,
-            scale: SCALE,
         }
     }
 }
